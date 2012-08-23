@@ -1,3 +1,5 @@
+// Original author: Dan Quinlan
+
 // This is a program to evaluate similarity of names of user defined language constructs.
 
 // Ratcliff/Obershelp pattern recognition:
@@ -260,7 +262,7 @@ Traversal::processNode(SgNode* n, SynthesizedAttribute& synthesizedAttribute )
         string name = namespaceDeclaration->get_name().str();
 
         #if DEBUG > 3
-        printf ("SgNamespaceDeclaration: %s \n",name.c_str());
+          printf ("SgNamespaceDeclaration: %s \n",name.c_str());
         #endif
 
         synthesizedAttribute.nameList.push_back(
@@ -326,153 +328,208 @@ Traversal::processNames(SgNode* n, SynthesizedAttribute& synthesizedAttribute )
 
             size_t i_length = i->size();
             size_t j_length = j->size();
-            float greatestPossibleSimilarity = ((float)j_length) / ((float)i_length);
+
+            float greatestPossibleSimilarity =
+                ((float)j_length) / ((float)i_length);
+
             if (greatestPossibleSimilarity > 1.0)
-              greatestPossibleSimilarity = 1.0 / greatestPossibleSimilarity;
+            {
+                greatestPossibleSimilarity =
+                    1.0 / greatestPossibleSimilarity;
+            }
 
             if (greatestPossibleSimilarity < similarity_threshold)
-              {
-            #if DEBUG > 1
-                printf ("Skipping case of j_index = %d i_index = %d (%s,%s) greatestPossibleSimilarity = %f \n",j_index,i_index,i->c_str(), j->c_str(),greatestPossibleSimilarity);
-            #endif
+            {
+                #if DEBUG > 1
+                printf ("Skipping case of "
+                        "j_index = %d i_index = %d (%s,%s) "
+                        "greatestPossibleSimilarity = %f \n",
+                        j_index,
+                        i_index,
+                        i->c_str(),
+                        j->c_str(),
+                        greatestPossibleSimilarity);
+                #endif
+
                 continue;
-              }
+            }
 
             #if DEBUG > 2
-            printf ("Evaluating similarityMetric of j_index = %d <= i_index = %d (%s,%s) \n",j_index,i_index,i->c_str(), j->c_str());
+              printf ("Evaluating similarityMetric of"
+                      "j_index = %d <= i_index = %d (%s,%s) \n",
+                      j_index,
+                      i_index,
+                      i->c_str(),
+                      j->c_str());
             #endif
-            float similarity = similarityMetric(i->c_str(), j->c_str());
+
+            float similarity =
+                similarityMetric(
+                    i->c_str(),
+                    j->c_str());
+
             if (similarity > similarity_threshold)
-              {
+            {
                 string lcs = longestCommonSubstring(i->c_str(), j->c_str());
-            #if DEBUG > 1
-                printf("\n\"%s\" and \"%s\" are %3.0f%% similar.\nOne of the longest common sequences is \"%s\".\n\n", i->c_str(), j->c_str(),similarity*100, lcs.c_str());
-            #endif
-                results.push_back(pair<NameStructureType,NameStructureType>(*i,*j));
-              }
+
+                #if DEBUG > 1
+                printf("\n\"%s\" and \"%s\" are %3.0f%% similar.\n"
+                       "One of the longest common sequences is \"%s\".\n\n",
+                        i->c_str(),
+                        j->c_str(),
+                        similarity*100,
+                        lcs.c_str());
+                #endif
+
+                results.push_back(
+                    pair<NameStructureType, NameStructureType> (*i, *j));
+            }
         }
-    }
+    }// for each synthesized attribute
 
     // Output the resulting matches of any non-empty list of results
     if (results.empty() == false)
     {
-      printf ("\n\n******************************************************* \n");
-      printf ("Processing matches of name in scope = %p = %s = %s \n",scopeStatement,scopeStatement->class_name().c_str(), SageInterface::get_name(scopeStatement).c_str());
-      for (vector< pair<NameStructureType,NameStructureType> >::iterator i = results.begin(); i != results.end(); i++)
-         {
-        // Output the matching names
+        printf ("\n\n*******************************************************\n");
+        printf ("Processing matches of name in "
+                "scope = %p = %s = %s \n",
+                scopeStatement,
+                scopeStatement->class_name().c_str(),
+                SageInterface::get_name(scopeStatement).c_str());
 
-           SgNode* firstNode  = i->first.associatedNode;
-           SgNode* secondNode = i->second.associatedNode;
+        vector< pair<NameStructureType, NameStructureType> >::iterator i;
+        for (i = results.begin(); i != results.end(); ++i)
+        {
+            // Output the matching names
 
-           ROSE_ASSERT(firstNode != NULL);
-           ROSE_ASSERT(secondNode != NULL);
+            SgNode* firstNode  = i->first.associatedNode;
+            ROSE_ASSERT(firstNode != NULL);
 
-           float similarity = similarityMetric(i->first.c_str(), i->second.c_str());
-           int similarityPercentage = 100 * similarity;
+            SgNode* secondNode = i->second.associatedNode;
+            ROSE_ASSERT(secondNode != NULL);
 
-           printf ("Matching similar names: similarity = %d percent %s:%s:%s is similar to %s:%s:%s \n",similarityPercentage,
-                i->first.associatedNode->class_name().c_str(),SageInterface::get_name(i->first.associatedNode).c_str(),i->first.c_str(),
-                i->second.associatedNode->class_name().c_str(),SageInterface::get_name(i->second.associatedNode).c_str(),i->second.c_str());
-           printf ("     %s:%s on line %d in file %s \n",firstNode->class_name().c_str(),SageInterface::get_name(firstNode).c_str(),firstNode->get_file_info()->get_line(),firstNode->get_file_info()->get_filename());
-           printf ("     %s:%s on line %d in file %s \n",secondNode->class_name().c_str(),SageInterface::get_name(secondNode).c_str(),secondNode->get_file_info()->get_line(),secondNode->get_file_info()->get_filename());
-           printf ("\n");
-         }
+            float similarity =
+            similarityMetric(i->first.c_str(), i->second.c_str());
+            int similarityPercentage = 100 * similarity;
 
-      printf ("******************************************************* \n\n");
+            printf ("Matching similar names: similarity = %d "
+                    "percent %s:%s:%s is similar to %s:%s:%s \n",
+                    similarityPercentage,
+                    i->first.associatedNode->class_name().c_str(),
+                    SageInterface::get_name(
+                        i->first.associatedNode).c_str(),
+                        i->first.c_str(),
+                    i->second.associatedNode->class_name().c_str(),
+                    SageInterface::get_name(
+                        i->second.associatedNode).c_str(),
+                        i->second.c_str());
+
+            printf ("     %s:%s on line %d in file %s \n",
+                    firstNode->class_name().c_str(),
+                    SageInterface::get_name(firstNode).c_str(),
+                    firstNode->get_file_info()->get_line(),
+                    firstNode->get_file_info()->get_filename());
+
+            printf ("     %s:%s on line %d in file %s \n",
+                    secondNode->class_name().c_str(),
+                    SageInterface::get_name(secondNode).c_str(),
+                    secondNode->get_file_info()->get_line(),
+                    secondNode->get_file_info()->get_filename());
+
+            printf ("\n");
+        }
+
+        printf ("******************************************************* \n\n");
     }
   }
 
 
 InheritedAttribute
 Traversal::evaluateInheritedAttribute (
-     SgNode* astNode,
-     InheritedAttribute inheritedAttribute )
-   {
-     if (isSgScopeStatement(astNode) != NULL)
-        {
-       // Build a new inherited attribute.
-          return InheritedAttribute();
-        }
+    SgNode* astNode,
+    InheritedAttribute inheritedAttribute)
+  {
+    if (isSgScopeStatement(astNode) != NULL)
+    {
+        // Build a new inherited attribute.
+        return InheritedAttribute();
+    }
 
-     return inheritedAttribute;
-   }
+    return inheritedAttribute;
+  }
 
 SynthesizedAttribute
 Traversal::evaluateSynthesizedAttribute (
      SgNode* astNode,
      InheritedAttribute inheritedAttribute,
      SynthesizedAttributesList childAttributes )
-   {
-     SynthesizedAttribute result;
-#if 1
-  // Accumulate the names in the children into the names at the parent (current node).
-     for (SynthesizedAttributesList::iterator i = childAttributes.begin(); i != childAttributes.end(); i++)
-        {
-          for (vector<NameStructureType>::iterator n = i->nameList.begin(); n != i->nameList.end(); n++)
-             {
-               result.nameList.push_back(*n);
-             }
-        }
-#endif
+  {
+    SynthesizedAttribute result;
 
-     if (isSgScopeStatement(astNode) != NULL)
+    #if 1
+    // Accumulate the names in the children into the names at the parent (current node).
+    SynthesizedAttributesList::iterator i;
+    for (i = childAttributes.begin(); i != childAttributes.end(); ++i)
+    {
+        vector<NameStructureType>::iterator n;
+        for (n = i->nameList.begin(); n != i->nameList.end(); ++n)
         {
-       // Now process the collected names.
-          processNames(astNode,result);
+            result.nameList.push_back(*n);
         }
-       else
-        {
-          processNode(astNode,result);
-        }
+    }
+    #endif
 
-     return result;
-   }
+    if (isSgScopeStatement(astNode) != NULL)
+    {
+        // Now process the collected names.
+        processNames(astNode, result);
+    }
+    else
+    {
+        processNode(astNode,result);
+    }
+
+    return result;
+  }
 
 
 int
-main( int argc, char * argv[] )
-   {
-     SgProject* project = new SgProject(argc, argv);
+main(int argc, char * argv[])
+  {
+    SgProject* project = new SgProject(argc, argv);
 
-  // Build the inherited attribute
-     InheritedAttribute inheritedAttribute;
+    // Build the inherited attribute
+    InheritedAttribute inheritedAttribute;
 
-  // Define the traversal
-     Traversal myTraversal;
+    // Define the traversal
+    Traversal myTraversal;
 
-  // Call the traversal starting at the project (root) node of the AST
-#if 0
-  // For testing this just traverses the named input file (excluding header files).
-     myTraversal.traverseInputFiles(project,inheritedAttribute);
-#else
-  // For more common use this traverses the input file and all of its header files.
-     myTraversal.traverse(project,inheritedAttribute);
-#endif
+    // Call the traversal starting at the project (root) node of the AST
+    #if 0
+    // For testing this just traverses the named input file (excluding header files).
+    myTraversal.traverseInputFiles(project,inheritedAttribute);
+    #else
+    // For more common use this traverses the input file and all of its header files.
+    myTraversal.traverse(project,inheritedAttribute);
+    #endif
 
-  // printf ("nameList.size() = %zu \n",nameList.size());
-  // printf ("nameSet.size()  = %zu \n",nameSet.size());
+    //cout << "Generating DOT...(for debugging)\n";
+    //generateDOT( *project );
+    //cout << "Done with DOT\n";
 
-     cout << "Generating DOT...(for debugging)\n";
-     generateDOT( *project );
-     cout << "Done with DOT\n";
+    // Interactively test the string similarity support.
+    #if 0
+    #define MAX_STR	256
 
-#if 0
-  // Test the string similarity support.
-#define MAX_STR	256
+    char str1[MAX_STR], str2[MAX_STR], dump;
+    printf("Type the 2 strings to compare.\nTo finish leave first string blank.\n");
+    while(scanf("%[^\n]", str1) !=0 )
+      {
+        scanf("\n%[^\n]%c", str2, &dump);
+        printf("\n\"%s\" and \"%s\" are %3.0f%% similar.\nOne of the longest common sequences is \"%s\".\n\n", str1, str2,similarityMetric(str1, str2)*100, longestCommonSubstring(str1, str2));
+     }
+    #endif
 
-     char str1[MAX_STR], str2[MAX_STR], dump;
-     printf("Type the 2 strings to compare.\nTo finish leave first string blank.\n");
-     while(scanf("%[^\n]", str1) !=0 )
-        {
-          scanf("\n%[^\n]%c", str2, &dump);
-          printf("\n\"%s\" and \"%s\" are %3.0f%% similar.\nOne of the longest common sequences is \"%s\".\n\n", str1, str2,similarityMetric(str1, str2)*100, longestCommonSubstring(str1, str2));
-	     }
-#endif
-
-     printf ("\nLeaving main program ... \n");
-
-  // backend(project);
-     return 0;
-   }
-
+    // backend(project);
+    return 0;
+  }
