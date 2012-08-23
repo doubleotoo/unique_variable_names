@@ -412,8 +412,9 @@ Traversal::processNames(SgNode* n, SynthesizedAttribute& synthesizedAttribute )
             similarityMetric(i->first.c_str(), i->second.c_str());
             int similarityPercentage = 100 * similarity;
 
-            printf ("Matching similar names: similarity = %d "
-                    "percent %s:%s:%s is similar to %s:%s:%s \n",
+            printf ("[%d\% similarity]\n"
+                    "\t%s:%s:%s\n"
+                    "\t%s:%s:%s\n",
                     similarityPercentage,
                     i->first.associatedNode->class_name().c_str(),
                     SageInterface::get_name(
