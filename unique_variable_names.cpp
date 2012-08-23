@@ -1,4 +1,4 @@
-// This is a program evaluate similarity of names of user defined language constructs.
+// This is a program to evaluate similarity of names of user defined language constructs.
 
 // Ratcliff/Obershelp pattern recognition:
 // The Ratcliff/Obershelp algorithm computes the similarity of two strings as the doubled 
@@ -14,74 +14,77 @@
 
 using namespace std;
 
-#define MAX_LCS 256	/*Maximum size of the longest common sequence. You might wish to change it*/
+#define MAX_LCS 256 ///< Maximum size of the longest common sequence
 
+float similarity_threshold = 0.75;
 
-float similarityCriteria = 0.75;
-
-// Global collections of names
-// vector<string> nameList;
-// set<string> nameSet;
-
-
+/**
+ * Quick and dirty swap of the address of 2 arrays
+ * of `unsigned int`.
+ */
 void
-swap( unsigned **first, unsigned **second)
-   {
-  // Quick and dirty swap of the address of 2 arrays of unsigned int
+swap(unsigned **first, unsigned **second)
+  {
+    unsigned *temp;
+    temp = *first;
+    *first = *second;
+    *second = temp;
+  }
 
-     unsigned *temp;
-     temp = *first;
-     *first = *second;
-     *second = temp;
-   }
-
+/**
+ * \return percent similarity of two strings
+ *
+ * Assumes that both strings point to two valid, null-terminated
+ * char arrays.
+ *
+ * Note that the order of the strings is significant.
+ *
+ * For example,
+ *
+ *  ("buffer", "fer") = 0.5
+ *  ("fer", "buffer") = 1.0
+ */
 float
-similarityMetric( const char *strX, const char *strY)
-   {
-  // Note that the order of the strings is significant 
-  // (e.g. ("buffer","fer") = 0.5, while ("fer","buffer") = 1.0).
+similarityMetric(const char *strX, const char *strY)
+  {
+    size_t  lenX = strlen(strX),
+            lenY = strlen(strY);
 
-  // A function which returns how similar 2 strings are
-  // Assumes that both point to 2 valid null terminated array of chars.
-  // Returns the similarity between them.
+    const char *str1 = (lenX > lenY) ? strX : strY,
+               *str2 = (lenX > lenY) ? strY : strX;
 
-     size_t lenX = strlen(strX), lenY = strlen(strY);
+    size_t len1 = strlen(str1), len2 = strlen(str2);
 
-     const char* str1 = lenX > lenY ? strX : strY;
-     const char* str2 = lenX > lenY ? strY : strX;
+    ROSE_ASSERT(len1 >= len2);
 
-     size_t len1 = strlen(str1), len2 = strlen(str2);
+    float lenLCS;
+    unsigned j, k, *previous, *next;
 
-     ROSE_ASSERT(len1 >= len2);
+    if (len1 == 0 || len2 == 0)
+        return 0.0;
 
-     float lenLCS;
-     unsigned j, k, *previous, *next;
+    previous = (unsigned *) calloc( len1+1, sizeof(unsigned));
+    next     = (unsigned *) calloc( len1+1, sizeof(unsigned));
 
-     if (len1 == 0 || len2 == 0)
-          return 0.0;
+    for(j=0; j<len2; ++j)
+      {
+        for(k=1; k<=len1; ++k)
+             if( str1[k-1] == str2[j])
+                  next[k]=previous[k-1]+1;
+               else
+                  next[k] = previous[k] >= next[k-1] ? previous[k] : next[k-1];
 
-     previous = (unsigned *) calloc( len1+1, sizeof(unsigned));
-     next     = (unsigned *) calloc( len1+1, sizeof(unsigned));
+     // Note that this as a function might eliminate oportunities for optimization.
+        swap( &previous, &next);
+      }
 
-     for(j=0; j<len2; ++j)
-        {
-          for(k=1; k<=len1; ++k)
-               if( str1[k-1] == str2[j])
-                    next[k]=previous[k-1]+1;
-                 else
-                    next[k] = previous[k] >= next[k-1] ? previous[k] : next[k-1];
+    lenLCS = (float)previous[len1];
 
-       // Note that this as a function might eliminate oportunities for optimization.
-          swap( &previous, &next);
-        }
+    free(previous);
+    free(next);
 
-     lenLCS = (float)previous[len1];
-
-     free(previous);
-     free(next);
-
-     return lenLCS /= len1;
-   }
+    return lenLCS /= len1;
+  }
 
 char*
 longestCommonSubstring( const char *str1, const char *str2)
@@ -283,7 +286,7 @@ Traversal::processNames( SgNode* n, SynthesizedAttribute & synthesizedAttribute 
                if (greatestPossibleSimilarity > 1.0)
                   greatestPossibleSimilarity = 1.0 / greatestPossibleSimilarity;
 
-               if (greatestPossibleSimilarity < similarityCriteria)
+               if (greatestPossibleSimilarity < similarity_threshold)
                   {
 #if DEBUG > 1
                     printf ("Skipping case of j_index = %d i_index = %d (%s,%s) greatestPossibleSimilarity = %f \n",j_index,i_index,i->c_str(), j->c_str(),greatestPossibleSimilarity);
@@ -295,7 +298,7 @@ Traversal::processNames( SgNode* n, SynthesizedAttribute & synthesizedAttribute 
                printf ("Evaluating similarityMetric of j_index = %d <= i_index = %d (%s,%s) \n",j_index,i_index,i->c_str(), j->c_str());
 #endif
                float similarity = similarityMetric(i->c_str(), j->c_str());
-               if (similarity > similarityCriteria)
+               if (similarity > similarity_threshold)
                   {
                     string lcs = longestCommonSubstring(i->c_str(), j->c_str());
 #if DEBUG > 1
